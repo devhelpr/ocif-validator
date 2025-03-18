@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["ocif", "nodes", "relations", "resources"],
+  "properties": {
+    "ocif": {
+      "type": "string",
+      "const": "https://canvasprotocol.org/ocif/0.3"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "data"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "position": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "size": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "resource": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type"],
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "strokeWidth": {
+                  "type": "number"
+                },
+                "strokeColor": {
+                  "type": "string"
+                },
+                "fillColor": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "end": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "startMarker": {
+                  "type": "string"
+                },
+                "endMarker": {
+                  "type": "string"
+                },
+                "relation": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "data"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type", "start", "end", "rel", "node"],
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                },
+                "rel": {
+                  "type": "string"
+                },
+                "node": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "representations"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "representations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["mime-type", "content"],
+              "properties": {
+                "mime-type": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
