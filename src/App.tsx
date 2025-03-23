@@ -358,6 +358,14 @@ function App() {
                 >
                   Specification
                 </a>
+                <span>•</span>
+                <a 
+                  href="/hello-world.ocif.json" 
+                  download="hello-world.ocif.json"
+                  className="hover:text-indigo-600 transition-colors duration-200"
+                >
+                  Example File
+                </a>
               </div>
             </div>
           </div>
