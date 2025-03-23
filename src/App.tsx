@@ -75,6 +75,9 @@ function App() {
                 <p className="text-zinc-600">
                   Upload your JSON file to validate against the OCIF schema
                 </p>
+                <p className="text-sm text-zinc-500 mt-2">
+                  Currently supporting OCIF specification v0.3
+                </p>
               </div>
             </div>
             
@@ -162,8 +165,8 @@ function App() {
                 {validationResult.errors && (
                   <ul className="space-y-3 mt-6">
                     {validationResult.errors.map((error, index) => (
-                      <li key={index} className="flex items-start gap-2 text-rose-700">
-                        <span className="text-rose-500 mt-1">•</span>
+                      <li key={index} className="flex items-center gap-2 text-rose-700">
+                        <span className="text-rose-500">•</span>
                         <span className="text-sm">{error}</span>
                       </li>
                     ))}
@@ -171,6 +174,30 @@ function App() {
                 )}
               </div>
             )}
+          </div>
+          <div className="mt-8 px-6 py-6 sm:px-8 border-t border-zinc-100">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-zinc-500">
+              <span>Learn more about OCIF:</span>
+              <div className="flex items-center gap-4">
+                <a 
+                  href="https://canvasprotocol.org" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-indigo-600 transition-colors duration-200"
+                >
+                  Homepage
+                </a>
+                <span>•</span>
+                <a 
+                  href="https://canvasprotocol.org/spec" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-indigo-600 transition-colors duration-200"
+                >
+                  Specification
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
