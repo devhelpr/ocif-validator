@@ -5,7 +5,7 @@
   "properties": {
     "ocif": {
       "type": "string",
-      "const": "https://canvasprotocol.org/ocif/0.3"
+      "const": "https://canvasprotocol.org/ocif/0.4"
     },
     "nodes": {
       "type": "array",
