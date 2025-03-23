@@ -234,7 +234,7 @@ function App() {
                   Upload your JSON file to validate against the OCIF schema
                 </p>
                 <p className="text-sm text-zinc-500 mt-2">
-                  Currently supporting OCIF specification v0.3
+                  Currently supporting OCIF specification v0.4
                 </p>
               </div>
             </div>
