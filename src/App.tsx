@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import Ajv, { ErrorObject } from 'ajv'
+import JSON5 from 'json5'
 import schema from '../schema.json'
 
 const ajv = new Ajv({ allErrors: true, verbose: true })
@@ -133,7 +134,20 @@ function App() {
 
     try {
       const text = await file.text()
-      const json = JSON.parse(text)
+      let json
+      
+      try {
+        // First try standard JSON parse
+        json = JSON.parse(text)
+      } catch {
+        try {
+          // If standard JSON fails, try JSON5
+          json = JSON5.parse(text)
+        } catch {
+          throw new Error('Invalid JSON/JSON5 format')
+        }
+      }
+
       const isValid = validate(json)
 
       if (!isValid && validate.errors) {
@@ -170,10 +184,10 @@ function App() {
         isValid: false,
         errors: [{
           path: '/',
-          message: 'Invalid JSON format',
+          message: 'Invalid JSON/JSON5 format',
           line: 1,
           column: 1,
-          details: 'The file contains invalid JSON syntax'
+          details: 'The file contains invalid JSON/JSON5 syntax'
         }]
       })
     }
@@ -193,7 +207,7 @@ function App() {
     e.preventDefault()
     setIsDragging(false)
     const file = e.dataTransfer.files[0]
-    if (file && file.type === 'application/json') {
+    if (file && (file.type === 'application/json' || file.name.toLowerCase().endsWith('.json') || file.name.toLowerCase().endsWith('.json5'))) {
       const input = document.getElementById('file-upload') as HTMLInputElement
       if (input) {
         const dataTransfer = new DataTransfer()
@@ -267,12 +281,12 @@ function App() {
                         name="file-upload"
                         type="file"
                         className="sr-only"
-                        accept=".json"
+                        accept=".json,.json5"
                         onChange={handleFileUpload}
                       />
                     </label>
                     <p className="text-zinc-600">or drag and drop</p>
-                    <p className="text-sm text-zinc-500">JSON files only</p>
+                    <p className="text-sm text-zinc-500">JSON and JSON5 files</p>
                   </div>
                 </div>
               </div>
