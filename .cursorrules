@@ -1,4 +1,0 @@
-use tailwindcss v4
-split components using atomic design principles
-use clean code and readable code
-use classes for business and domain logic
