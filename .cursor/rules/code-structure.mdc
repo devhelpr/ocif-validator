@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# We use clean-code principles and atomic design
+
+- Put business logic in classes
+- Split components according to atomic design
+- Keep components small and use react hooks
