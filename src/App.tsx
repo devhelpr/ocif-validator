@@ -2,6 +2,39 @@ import { useState, useCallback } from 'react'
 import Ajv, { ErrorObject } from 'ajv'
 import JSON5 from 'json5'
 import schema from '../schema.json'
+import { ExportButton } from './components/molecules/ExportButton'
+
+// Define the OCIF JSON type based on the schema
+type OCIFJson = {
+  version: string;
+  nodes?: {
+    [key: string]: {
+      id: string;
+      position?: [number, number];
+      size?: [number, number];
+      resource?: {
+        text?: string;
+      };
+      text?: string;
+      data?: Array<{
+        type: '@ocwg/node/oval' | '@ocwg/node/rectangle' | '@ocwg/node/arrow';
+        strokeWidth?: number;
+        strokeColor?: string;
+        fillColor?: string;
+      }>;
+    };
+  };
+  relations?: Array<{
+    id: string;
+    data: Array<{
+      type: string;
+      start: string;
+      end: string;
+      rel: string;
+      node: string;
+    }>;
+  }>;
+};
 
 const ajv = new Ajv({ allErrors: true, verbose: true })
 const validate = ajv.compile(schema)
@@ -127,6 +160,7 @@ function App() {
     errors?: ValidationError[];
   } | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [currentJson, setCurrentJson] = useState<OCIFJson | null>(null)
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -148,6 +182,7 @@ function App() {
         }
       }
 
+      setCurrentJson(json)
       const isValid = validate(json)
 
       if (!isValid && validate.errors) {
@@ -180,6 +215,7 @@ function App() {
         })
       }
     } catch {
+      setCurrentJson(null)
       setValidationResult({
         isValid: false,
         errors: [{
@@ -192,6 +228,24 @@ function App() {
       })
     }
   }, [])
+
+  const handleExport = useCallback(() => {
+    if (!currentJson || !validationResult?.isValid) return;
+
+    // Create SVG content based on OCIF data
+    const svgContent = generateSVG(currentJson);
+    
+    // Create blob and download
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ocif-export.svg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [currentJson, validationResult]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -225,18 +279,16 @@ function App() {
       <div className="container mx-auto max-w-4xl">
         <div className="bg-white rounded-3xl shadow-xl shadow-zinc-200/50 backdrop-blur-sm animate-fade-in">
           <div className="px-6 py-8 sm:px-8 sm:py-10">
-            <div className="flex justify-between items-center mb-12">
-              <div className="text-center flex-1">
-                <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 inline-block text-transparent bg-clip-text mb-4">
-                  OCIF JSON Validator
-                </h1>
-                <p className="text-zinc-600">
-                  Upload your JSON file to validate against the OCIF schema
-                </p>
-                <p className="text-sm text-zinc-500 mt-2">
-                  Currently supporting OCIF specification v0.4
-                </p>
-              </div>
+            <div className="text-center mb-12">
+              <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 inline-block text-transparent bg-clip-text mb-4">
+                OCIF JSON Validator
+              </h1>
+              <p className="text-zinc-600">
+                Upload your JSON file to validate against the OCIF schema
+              </p>
+              <p className="text-sm text-zinc-500 mt-2">
+                Currently supporting OCIF specification v0.4
+              </p>
             </div>
             
             <div className="mt-8">
@@ -350,6 +402,16 @@ function App() {
                 )}
               </div>
             )}
+
+            {validationResult?.isValid && (
+              <div className="mt-8 flex justify-center">
+                <ExportButton 
+                  onExport={handleExport}
+                  disabled={!currentJson || !validationResult?.isValid}
+                  variant="subtle"
+                />
+              </div>
+            )}
           </div>
           <div className="mt-8 px-6 py-6 sm:px-8 border-t border-zinc-100">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-zinc-500">
@@ -387,6 +449,199 @@ function App() {
       </div>
     </div>
   )
+}
+
+interface Node {
+  id: string;
+  type: 'rectangle' | 'oval';
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  text?: string;
+  style: {
+    type: 'rectangle' | 'oval';
+    strokeWidth: number;
+    strokeColor: string;
+    fillColor: string;
+  };
+}
+
+interface Relation {
+  from: string;
+  to: string;
+  path: string;
+  type: string;
+  rel: string;
+}
+
+function generateSVG(json: OCIFJson): string {
+  const width = 1200;
+  const height = 800;
+  const padding = 50;
+  const nodeSpacing = 100;
+  
+  // Extract nodes and their properties
+  const nodes: Node[] = [];
+  const relations: Relation[] = [];
+  
+  // Helper function to get text from linked resource
+  const getNodeText = (node: NonNullable<OCIFJson['nodes']>[string]): string => {
+    if (node.resource?.text) return node.resource.text;
+    if (typeof node.text === 'string') return node.text;
+    return 'Node';
+  };
+
+  // Helper function to get node style from data
+  const getNodeStyle = (node: NonNullable<OCIFJson['nodes']>[string]): Node['style'] => {
+    const nodeData = node.data?.[0];
+    return {
+      type: nodeData?.type === '@ocwg/node/oval' ? 'oval' as const : 'rectangle' as const,
+      strokeWidth: nodeData?.strokeWidth || 2,
+      strokeColor: nodeData?.strokeColor || '#64748b',
+      fillColor: nodeData?.fillColor || '#f8fafc'
+    };
+  };
+
+  // Process nodes from the OCIF data
+  if (json.nodes) {
+    Object.entries(json.nodes).forEach(([id, node], index) => {
+      const nodeWidth = node.size?.[0] || 120;
+      const nodeHeight = node.size?.[1] || 60;
+      
+      // Use position from node data or calculate grid position
+      const x = node.position?.[0] || (padding + (index % 3) * (nodeWidth + nodeSpacing));
+      const y = node.position?.[1] || (padding + Math.floor(index / 3) * (nodeHeight + nodeSpacing));
+
+      if (node.data?.[0]?.type !== "@ocwg/node/arrow") {
+        const style = getNodeStyle(node);
+        nodes.push({
+          id: node.id,
+          type: style.type,
+          width: nodeWidth,
+          height: nodeHeight,
+          x,
+          y,
+          text: getNodeText(node),
+          style
+        });
+      }
+    });
+  }
+
+  // Process relations
+  if (json.relations) {
+    console.log("relations",json.relations,nodes);
+    json.relations.forEach(relationGroup => {
+      relationGroup.data.forEach(relation => {
+        // Find nodes by string ID
+        const fromNode = nodes.find(n => n.id === relation.start);
+        const toNode = nodes.find(n => n.id === relation.end);
+        console.log("relation",relation,fromNode, toNode);  
+        if (fromNode && toNode) {
+          // Calculate control points for curved path using position array
+          const fromX = fromNode.x + fromNode.width / 2;
+          const fromY = fromNode.y + fromNode.height / 2;
+          const toX = toNode.x + toNode.width / 2;
+          const toY = toNode.y + toNode.height / 2;
+          
+          // Create a curved path
+          const dx = toX - fromX;
+          const controlPoint1X = fromX + dx * 0.5;
+          const controlPoint1Y = fromY;
+          const controlPoint2X = toX - dx * 0.5;
+          const controlPoint2Y = toY;
+          
+          const path = `M ${fromX} ${fromY} 
+                       C ${controlPoint1X} ${controlPoint1Y}, 
+                         ${controlPoint2X} ${controlPoint2Y}, 
+                         ${toX} ${toY}`;
+          
+          relations.push({ 
+            from: relation.start, 
+            to: relation.end, 
+            path,
+            type: relation.type,
+            rel: relation.rel
+          });
+        }
+      });
+    });
+  }
+
+  // Generate SVG content
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker
+      id="arrowhead"
+      markerWidth="10"
+      markerHeight="7"
+      refX="9"
+      refY="3.5"
+      orient="auto"
+    >
+      <polygon
+        points="0 0, 10 3.5, 0 7"
+        fill="#94a3b8"
+      />
+    </marker>
+  </defs>
+  
+  <!-- Relations (drawn first so they appear behind nodes) -->
+  ${relations.map(relation => `
+    <path 
+      d="${relation.path}"
+      stroke="#94a3b8"
+      stroke-width="2"
+      fill="none"
+      marker-end="url(#arrowhead)"
+      title="${relation.type} (${relation.rel})"
+    />
+  `).join('\n')}
+  
+  <!-- Nodes -->
+  ${nodes.map(node => `
+    <!-- ${node.type} node -->
+    ${node.type === 'oval' 
+      ? `<ellipse
+          cx="${node.x + node.width/2}"
+          cy="${node.y + node.height/2}"
+          rx="${node.width/2}"
+          ry="${node.height/2}"
+          fill="${node.style.fillColor}"
+          stroke="${node.style.strokeColor}"
+          stroke-width="${node.style.strokeWidth}"
+        />`
+      : `<rect
+          x="${node.x}"
+          y="${node.y}"
+          width="${node.width}"
+          height="${node.height}"
+          fill="${node.style.fillColor}"
+          stroke="${node.style.strokeColor}"
+          stroke-width="${node.style.strokeWidth}"
+          rx="8"
+          ry="8"
+        />`
+    }
+    
+    <!-- Node text -->
+    <text
+      x="${node.x + node.width/2}"
+      y="${node.y + node.height/2}"
+      font-family="Arial"
+      font-size="14"
+      fill="#1e293b"
+      text-anchor="middle"
+      dominant-baseline="middle"
+    >${node.text}</text>
+  `).join('\n')}
+</svg>`;
 }
 
 export default App
