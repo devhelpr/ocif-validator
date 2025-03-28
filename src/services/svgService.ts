@@ -32,6 +32,63 @@ const getNodeStyle = (node: NonNullable<OCIFJson['nodes']>[string]): Node['style
   };
 };
 
+// Helper function to calculate intersection point between a line and a rectangle/ellipse
+const calculateIntersectionPoint = (
+  startX: number, startY: number,
+  endX: number, endY: number,
+  node: Node,
+  isEndPoint: boolean = false
+): [number, number] => {
+  const centerX = node.x + node.width / 2;
+  const centerY = node.y + node.height / 2;
+  
+  // Calculate the direction vector from start to end
+  let dx = endX - startX;
+  let dy = endY - startY;
+  
+  // For end points, reverse the direction
+  if (isEndPoint) {
+    dx = -dx;
+    dy = -dy;
+  }
+  
+  const length = Math.sqrt(dx * dx + dy * dy);
+  const dirX = dx / length;
+  const dirY = dy / length;
+  
+  // For rectangles
+  if (node.type === 'rectangle') {
+    // Calculate intersection with rectangle sides
+    const halfWidth = node.width / 2;
+    const halfHeight = node.height / 2;
+    
+    // Check which side of the rectangle the line intersects with
+    const tx = Math.abs(dirX) < 0.01 ? Infinity : halfWidth / Math.abs(dirX);
+    const ty = Math.abs(dirY) < 0.01 ? Infinity : halfHeight / Math.abs(dirY);
+    
+    const t = Math.min(tx, ty);
+    
+    return [
+      centerX + (dirX * t),
+      centerY + (dirY * t)
+    ];
+  }
+  
+  // For ellipses
+  const a = node.width / 2;
+  const b = node.height / 2;
+  
+  // Calculate the intersection point with the ellipse
+  // Using parametric form of ellipse
+  const angle = Math.atan2(dy, dx);
+  const t = Math.sqrt(1 / ((Math.cos(angle) / a) ** 2 + (Math.sin(angle) / b) ** 2));
+  
+  return [
+    centerX + (Math.cos(angle) * t),
+    centerY + (Math.sin(angle) * t)
+  ];
+};
+
 export function generateSVG(json: OCIFJson): string {
   const width = 1200;
   const height = 800;
@@ -77,23 +134,30 @@ export function generateSVG(json: OCIFJson): string {
         const toNode = nodes.find(n => n.id === relation.end);
         
         if (fromNode && toNode) {
-          // Calculate control points for curved path using position array
-          const fromX = fromNode.x + fromNode.width / 2;
-          const fromY = fromNode.y + fromNode.height / 2;
-          const toX = toNode.x + toNode.width / 2;
-          const toY = toNode.y + toNode.height / 2;
+          // Calculate center points of both nodes
+          const fromCenterX = fromNode.x + fromNode.width / 2;
+          const fromCenterY = fromNode.y + fromNode.height / 2;
+          const toCenterX = toNode.x + toNode.width / 2;
+          const toCenterY = toNode.y + toNode.height / 2;
           
-          // Create a curved path
-          const dx = toX - fromX;
-          const controlPoint1X = fromX + dx * 0.5;
-          const controlPoint1Y = fromY;
-          const controlPoint2X = toX - dx * 0.5;
-          const controlPoint2Y = toY;
+          // For start point: calculate from start node center to end node center
+          const [startX, startY] = calculateIntersectionPoint(
+            fromCenterX, fromCenterY,
+            toCenterX, toCenterY,
+            fromNode
+          );
           
-          const path = `M ${fromX} ${fromY} 
-                       C ${controlPoint1X} ${controlPoint1Y}, 
-                         ${controlPoint2X} ${controlPoint2Y}, 
-                         ${toX} ${toY}`;
+          // For end point: calculate from end node center to start node center
+          // Note: We swap the direction for the end point
+          const [endX, endY] = calculateIntersectionPoint(
+            fromCenterX, fromCenterY,
+            toCenterX, toCenterY,
+            toNode,
+            true  // indicate this is an end point
+          );
+          
+          // Create a straight line path
+          const path = `M ${startX} ${startY} L ${endX} ${endY}`;
           
           relations.push({ 
             from: relation.start, 
