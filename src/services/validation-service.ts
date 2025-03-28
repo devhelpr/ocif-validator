@@ -193,4 +193,42 @@ export class ValidationService {
       };
     }
   }
+}
+
+// Create a singleton instance
+const validationService = new ValidationService();
+
+// Export the validation function that matches the interface expected by App.tsx
+export function validateJson(json: unknown, jsonString: string): ValidationResult {
+  const isValid = validationService['validate'](json);
+
+  if (!isValid && validationService['validate'].errors) {
+    const errors: ValidationError[] = validationService['validate'].errors.map(error => {
+      const path = error.instancePath || '/';
+      const { line, column } = validationService['findLineColumn'](jsonString, path);
+      
+      // Get context from the file
+      const lines = jsonString.split('\n');
+      const contextLine = lines[line - 1] || '';
+      const context = contextLine.trim();
+
+      return {
+        path: path === '' ? '/' : path,
+        message: error.message || 'Unknown error',
+        line,
+        column,
+        details: validationService['getSchemaDetails'](error),
+        context
+      };
+    });
+
+    return {
+      isValid: false,
+      errors
+    };
+  }
+
+  return {
+    isValid: true
+  };
 } 
