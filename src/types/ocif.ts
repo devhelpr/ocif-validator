@@ -5,9 +5,7 @@ export type OCIFJson = {
       id: string;
       position?: [number, number];
       size?: [number, number];
-      resource?: {
-        text?: string;
-      };
+      resource?: string;
       text?: string;
       data?: Array<{
         type: '@ocwg/node/oval' | '@ocwg/node/rectangle' | '@ocwg/node/arrow';
@@ -25,6 +23,13 @@ export type OCIFJson = {
       end: string;
       rel: string;
       node: string;
+    }>;
+  }>;
+  resources?: Array<{
+    id: string;
+    representations?: Array<{
+      'mime-type': string;
+      content: string;
     }>;
   }>;
 };

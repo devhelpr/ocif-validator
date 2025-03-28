@@ -1,9 +1,23 @@
 import { OCIFJson, Node, Relation } from '../types/ocif'
 
+type Resource = NonNullable<OCIFJson['resources']>[number];
+type Representation = NonNullable<Resource['representations']>[number];
+
 // Helper function to get text from linked resource
-const getNodeText = (node: NonNullable<OCIFJson['nodes']>[string]): string => {
-  if (node.resource?.text) return node.resource.text;
+const getNodeText = (node: NonNullable<OCIFJson['nodes']>[string], resources?: OCIFJson['resources']): string => {
+  // First check if there's a direct text property
   if (typeof node.text === 'string') return node.text;
+  
+  // Then check if there's a resource reference
+  if (node.resource && resources) {
+    const resource = resources.find((r: Resource) => r.id === node.resource);
+    if (resource) {
+      // Find the first text/plain representation
+      const textRep = resource.representations?.find((rep: Representation) => rep['mime-type'] === 'text/plain');
+      if (textRep?.content) return textRep.content;
+    }
+  }
+  
   return 'Node';
 };
 
@@ -30,7 +44,7 @@ export function generateSVG(json: OCIFJson): string {
 
   // Process nodes from the OCIF data
   if (json.nodes) {
-    Object.entries(json.nodes).forEach(([_, node], index) => {
+    Object.entries(json.nodes).forEach(([, node], index) => {
       const nodeWidth = node.size?.[0] || 120;
       const nodeHeight = node.size?.[1] || 60;
       
@@ -47,7 +61,7 @@ export function generateSVG(json: OCIFJson): string {
           height: nodeHeight,
           x,
           y,
-          text: getNodeText(node),
+          text: getNodeText(node, json.resources),
           style
         });
       }
