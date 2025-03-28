@@ -93,7 +93,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["type", "start", "end", "rel", "node"],
+              "required": ["type"],
               "properties": {
                 "type": {
                   "type": "string"

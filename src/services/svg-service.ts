@@ -25,7 +25,7 @@ const getNodeText = (node: NonNullable<OCIFJson['nodes']>[string], resources?: O
 const getNodeStyle = (node: NonNullable<OCIFJson['nodes']>[string]): Node['style'] => {
   const nodeData = node.data?.[0];
   return {
-    type: nodeData?.type === '@ocwg/node/oval' ? 'oval' as const : 'rectangle' as const,
+    type: nodeData?.type === '@ocif/node/oval' ? 'oval' as const : 'rectangle' as const,
     strokeWidth: nodeData?.strokeWidth || 2,
     strokeColor: nodeData?.strokeColor || '#64748b',
     fillColor: nodeData?.fillColor || '#f8fafc'
@@ -109,7 +109,7 @@ export function generateSVG(json: OCIFJson): string {
       const x = node.position?.[0] || (padding + (index % 3) * (nodeWidth + nodeSpacing));
       const y = node.position?.[1] || (padding + Math.floor(index / 3) * (nodeHeight + nodeSpacing));
 
-      if (node.data?.[0]?.type !== "@ocwg/node/arrow") {
+      if (node.data?.[0]?.type !== "@ocif/node/arrow") {
         const style = getNodeStyle(node);
         nodes.push({
           id: node.id,
