@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import JSON5 from 'json5'
 import { OCIFJson, ValidationError } from './types/ocif'
-import { validateJson } from './services/validationService'
+import { validateJson } from './services/ValidationService'
 import { generateSVG } from './services/svgService'
 import { Layout } from './components/templates/Layout'
 import { FileDropZone } from './components/molecules/FileDropZone'
