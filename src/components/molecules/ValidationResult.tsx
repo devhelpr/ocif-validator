@@ -1,5 +1,4 @@
-import React from 'react'
-import { ValidationError } from '../../types/ocif'
+import type { ValidationError } from '../../types/ocif'
 
 interface ValidationResultProps {
   isValid: boolean;
