@@ -149,7 +149,7 @@ export function generateSVG(json: OCIFJson): string {
       const x = node.position?.[0] || (50 + (index % 3) * (nodeWidth + nodeSpacing));
       const y = node.position?.[1] || (50 + Math.floor(index / 3) * (nodeHeight + nodeSpacing));
 
-      if (node.data?.[0]?.type !== "@ocwg/node/arrow") {
+      if (node.data?.[0]?.type !== "@ocif/node/arrow") {
         const style = getNodeStyle(node);
         nodes.push({
           id: node.id,
