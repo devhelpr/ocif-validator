@@ -8,7 +8,7 @@ export type OCIFJson = {
       resource?: string;
       text?: string;
       data?: Array<{
-        type: '@ocif/node/oval' | '@ocif/node/rectangle' | '@ocif/node/arrow';
+        type: '@ocwg/node/oval' | '@ocwg/node/rectangle' | '@ocwg/node/arrow';
         strokeWidth?: number;
         strokeColor?: string;
         fillColor?: string;

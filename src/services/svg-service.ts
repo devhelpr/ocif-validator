@@ -89,16 +89,56 @@ const calculateIntersectionPoint = (
   ];
 };
 
-export function generateSVG(json: OCIFJson): string {
-  const width = 1200;
-  const height = 800;
+// Calculate SVG dimensions based on node positions and sizes
+function calculateSVGDimensions(nodes: Node[]): { 
+  width: number; 
+  height: number;
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} {
+  if (nodes.length === 0) {
+    return { width: 800, height: 600, minX: 0, minY: 0, maxX: 800, maxY: 600 };
+  }
+
+  // Find min/max coordinates including node dimensions
+  const dimensions = nodes.reduce((acc, node) => {
+    const nodeRight = node.x + node.width;
+    const nodeBottom = node.y + node.height;
+
+    return {
+      minX: Math.min(acc.minX, node.x),
+      minY: Math.min(acc.minY, node.y),
+      maxX: Math.max(acc.maxX, nodeRight),
+      maxY: Math.max(acc.maxY, nodeBottom)
+    };
+  }, {
+    minX: Number.POSITIVE_INFINITY,
+    minY: Number.POSITIVE_INFINITY,
+    maxX: Number.NEGATIVE_INFINITY,
+    maxY: Number.NEGATIVE_INFINITY
+  });
+
+  // Add padding
   const padding = 50;
-  const nodeSpacing = 100;
-  
-  // Extract nodes and their properties
+  dimensions.minX -= padding;
+  dimensions.minY -= padding;
+  dimensions.maxX += padding;
+  dimensions.maxY += padding;
+
+  return {
+    ...dimensions,
+    width: dimensions.maxX - dimensions.minX,
+    height: dimensions.maxY - dimensions.minY
+  };
+}
+
+export function generateSVG(json: OCIFJson): string {
   const nodes: Node[] = [];
   const relations: Relation[] = [];
-
+  const nodeSpacing = 100;
+  
   // Process nodes from the OCIF data
   if (json.nodes) {
     Object.entries(json.nodes).forEach(([, node], index) => {
@@ -106,10 +146,10 @@ export function generateSVG(json: OCIFJson): string {
       const nodeHeight = node.size?.[1] || 60;
       
       // Use position from node data or calculate grid position
-      const x = node.position?.[0] || (padding + (index % 3) * (nodeWidth + nodeSpacing));
-      const y = node.position?.[1] || (padding + Math.floor(index / 3) * (nodeHeight + nodeSpacing));
+      const x = node.position?.[0] || (50 + (index % 3) * (nodeWidth + nodeSpacing));
+      const y = node.position?.[1] || (50 + Math.floor(index / 3) * (nodeHeight + nodeSpacing));
 
-      if (node.data?.[0]?.type !== "@ocif/node/arrow") {
+      if (node.data?.[0]?.type !== "@ocwg/node/arrow") {
         const style = getNodeStyle(node);
         nodes.push({
           id: node.id,
@@ -129,34 +169,28 @@ export function generateSVG(json: OCIFJson): string {
   if (json.relations) {
     json.relations.forEach(relationGroup => {
       relationGroup.data.forEach(relation => {
-        // Find nodes by string ID
         const fromNode = nodes.find(n => n.id === relation.start);
         const toNode = nodes.find(n => n.id === relation.end);
         
         if (fromNode && toNode) {
-          // Calculate center points of both nodes
           const fromCenterX = fromNode.x + fromNode.width / 2;
           const fromCenterY = fromNode.y + fromNode.height / 2;
           const toCenterX = toNode.x + toNode.width / 2;
           const toCenterY = toNode.y + toNode.height / 2;
           
-          // For start point: calculate from start node center to end node center
           const [startX, startY] = calculateIntersectionPoint(
             fromCenterX, fromCenterY,
             toCenterX, toCenterY,
             fromNode
           );
           
-          // For end point: calculate from end node center to start node center
-          // Note: We swap the direction for the end point
           const [endX, endY] = calculateIntersectionPoint(
             fromCenterX, fromCenterY,
             toCenterX, toCenterY,
             toNode,
-            true  // indicate this is an end point
+            true
           );
           
-          // Create a straight line path
           const path = `M ${startX} ${startY} L ${endX} ${endY}`;
           
           relations.push({ 
@@ -171,11 +205,14 @@ export function generateSVG(json: OCIFJson): string {
     });
   }
 
-  // Generate SVG content
+  // Calculate SVG dimensions based on node positions
+  const dimensions = calculateSVGDimensions(nodes);
+
+  // Generate SVG content with calculated dimensions and viewBox
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+<svg width="${dimensions.width}" height="${dimensions.height}" viewBox="${dimensions.minX} ${dimensions.minY} ${dimensions.width} ${dimensions.height}" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
-  <rect width="100%" height="100%" fill="#ffffff"/>
+  <rect x="${dimensions.minX}" y="${dimensions.minY}" width="100%" height="100%" fill="#ffffff"/>
   
   <!-- Arrow marker definition -->
   <defs>
