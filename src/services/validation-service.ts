@@ -1,4 +1,5 @@
-import Ajv, { ErrorObject } from 'ajv'
+import { ErrorObject } from 'ajv'
+import Ajv2020 from "ajv/dist/2020"
 import JSON5 from 'json5'
 import schema from '../../schema.json'
 
@@ -17,11 +18,12 @@ export interface ValidationResult {
 }
 
 export class ValidationService {
-  private readonly ajv: Ajv;
-  private readonly validate: ReturnType<Ajv['compile']>;
+  private readonly ajv: Ajv2020;
+  private readonly validate: ReturnType<Ajv2020['compile']>;
 
   constructor() {
-    this.ajv = new Ajv({ allErrors: true, verbose: true });
+
+    this.ajv = new Ajv2020({ allErrors: true, verbose: true });
     this.validate = this.ajv.compile(schema);
   }
 
