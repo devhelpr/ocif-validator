@@ -29,7 +29,8 @@ export type OCIFJson = {
     id: string;
     representations?: Array<{
       'mime-type': string;
-      content: string;
+      content?: string;
+      location?: string;
     }>;
   }>;
 };
