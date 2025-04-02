@@ -1,10 +1,11 @@
 import { OCIFJson, Node, Relation } from '../types/ocif'
+import { renderMarkdownToSVGText } from './utils/markdownToSVGText';
 
 type Resource = NonNullable<OCIFJson['resources']>[number];
 type Representation = NonNullable<Resource['representations']>[number];
 
 // Helper function to get text from linked resource
-const getNodeText = (node: NonNullable<OCIFJson['nodes']>[string], resources?: OCIFJson['resources']): string => {
+const getNodeText = (node: NonNullable<OCIFJson['nodes']>[string], resources?: OCIFJson['resources'], width? : number, height? : number): string => {
   // First check if there's a direct text property
   if (typeof node.text === 'string') return node.text;
   
@@ -12,9 +13,22 @@ const getNodeText = (node: NonNullable<OCIFJson['nodes']>[string], resources?: O
   if (node.resource && resources) {
     const resource = resources.find((r: Resource) => r.id === node.resource);
     if (resource) {
-      // Find the first text/plain representation
-      const textRep = resource.representations?.find((rep: Representation) => rep['mime-type'] === 'text/plain');
-      if (textRep?.content) return textRep.content;
+      // Find the first text/plain or text/markdown representation
+      const textRep = resource.representations?.find((rep: Representation) => 
+        rep['mime-type'] === 'text/plain' || rep['mime-type'] === 'text/markdown' || rep['mime-type'] === 'image/svg+xml'
+      );
+      if (textRep?.location) {
+        return textRep.location;
+      }
+      if (textRep?.content) {
+        if (textRep['mime-type'] === 'text/markdown') {
+          // Convert markdown to plain text (removing HTML tags)
+          const html = renderMarkdownToSVGText(textRep.content, width, height);
+          console.log("html to svg",html)  
+          return typeof html === 'string' ? html : '';
+        }
+        return textRep.content;
+      }
     }
   }
   
@@ -158,7 +172,7 @@ export function generateSVG(json: OCIFJson): string {
           height: nodeHeight,
           x,
           y,
-          text: getNodeText(node, json.resources),
+          text: getNodeText(node, json.resources, nodeWidth, nodeHeight),
           style
         });
       }
@@ -270,15 +284,18 @@ export function generateSVG(json: OCIFJson): string {
     }
     
     <!-- Node text -->
-    <text
+    ${node.text?.includes("<foreignObject") ? `<g text-anchor="middle" dominant-baseline="middle" transform="translate(${node.x },${node.y})">
+      ${node.text}
+    </g>` : `<text 
+      text-anchor="middle" dominant-baseline="middle" 
+      width="${node.width}"
+      height="${node.height}"
       x="${node.x + node.width/2}"
       y="${node.y + node.height/2}"
       font-family="Arial"
       font-size="14"
       fill="#1e293b"
-      text-anchor="middle"
-      dominant-baseline="middle"
-    >${node.text}</text>
+      >${node.text}</text>`}  
   `).join('\n')}
 </svg>`;
 } 
