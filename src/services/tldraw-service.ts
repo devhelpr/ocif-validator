@@ -148,8 +148,17 @@ export function generateTldrawJson(json: OCIFJson): string {
       } else if (node.resource && json.resources) {
         const resource = json.resources.find(r => r.id === node.resource);
         if (resource) {
+          // Try to find a text representation
           const textRep = resource.representations?.find(rep => rep['mime-type'] === 'text/plain');
-          if (textRep?.content) nodeText = textRep.content;
+          if (textRep?.content) {
+            nodeText = textRep.content;
+          } else {
+            // Fallback to any representation with content
+            const anyRep = resource.representations?.find(rep => rep.content);
+            if (anyRep?.content) {
+              nodeText = anyRep.content;
+            }
+          }
         }
       }
       
@@ -200,7 +209,7 @@ export function generateTldrawJson(json: OCIFJson): string {
           dash: "draw",
           size: "s",
           font: "draw",
-          text: nodeType,
+          text: nodeText,
           align: "middle",
           verticalAlign: "middle",
           growY: 0,
@@ -225,6 +234,20 @@ export function generateTldrawJson(json: OCIFJson): string {
           const fromY = fromNode.position?.[1] || 100;
           const toX = toNode.position?.[0] || 300;
           const toY = toNode.position?.[1] || 100;
+          
+          // Get relation text if available
+          let relationText = "";
+          // Check if the relation has a resource property (using type assertion)
+          const relationWithResource = relation as any;
+          if (relationWithResource.resource && json.resources) {
+            const resource = json.resources.find(r => r.id === relationWithResource.resource);
+            if (resource) {
+              const textRep = resource.representations?.find(rep => rep['mime-type'] === 'text/plain');
+              if (textRep?.content) {
+                relationText = textRep.content;
+              }
+            }
+          }
           
           // Add arrow
           tldrawJson.records.push({
@@ -257,7 +280,7 @@ export function generateTldrawJson(json: OCIFJson): string {
               },
               arrowheadStart: "none",
               arrowheadEnd: "arrow",
-              text: "",
+              text: relationText,
               labelPosition: 0.5,
               font: "draw"
             },
