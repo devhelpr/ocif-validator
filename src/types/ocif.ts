@@ -1,19 +1,21 @@
+export type OCIFNode =  {
+  id: string;
+  position?: [number, number];
+  size?: [number, number];
+  resource?: string;
+  text?: string;
+  data?: Array<{
+    type: '@ocif/node/oval' | '@ocif/node/rectangle' | '@ocif/node/arrow';
+    strokeWidth?: number;
+    strokeColor?: string;
+    fillColor?: string;
+  }>;
+}
+
 export type OCIFJson = {
   version: string;
   nodes?: {
-    [key: string]: {
-      id: string;
-      position?: [number, number];
-      size?: [number, number];
-      resource?: string;
-      text?: string;
-      data?: Array<{
-        type: '@ocif/node/oval' | '@ocif/node/rectangle' | '@ocif/node/arrow';
-        strokeWidth?: number;
-        strokeColor?: string;
-        fillColor?: string;
-      }>;
-    };
+    [key: string]: OCIFNode;
   };
   relations?: Array<{
     id: string;

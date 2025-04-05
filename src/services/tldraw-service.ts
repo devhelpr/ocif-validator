@@ -1,4 +1,4 @@
-import { OCIFJson } from '../types/ocif';
+import { OCIFJson, OCIFNode } from '../types/ocif';
 
 export function generateTldrawJson(json: OCIFJson): string {
   // Create base tldraw structure
@@ -127,7 +127,7 @@ export function generateTldrawJson(json: OCIFJson): string {
 
   // Add nodes
   if (json.nodes) {
-    Object.entries(json.nodes).forEach(([nodeId, node], index) => {
+    Object.entries(json.nodes).forEach(([_nodeId, node], index) => {
       if (node.data?.[0]?.type === "@ocif/node/arrow") return;
       
       const nodeWidth = node.size?.[0] || 120;
@@ -181,7 +181,7 @@ export function generateTldrawJson(json: OCIFJson): string {
             isOCIFNode: true
           }
         },
-        id: `shape:${nodeId}_group`,
+        id: `shape:${node.id}_group`,
         type: "group",
         parentId: "page:page",
         index: `b${index.toString().padStart(8, '1')}`,
@@ -197,7 +197,7 @@ export function generateTldrawJson(json: OCIFJson): string {
         isLocked: false,
         opacity: 1,
         meta: {},
-        id: `shape:${nodeId}`,
+        id: `shape:${node.id}`,
         type: "geo",
         props: {
           w: nodeWidth,
@@ -215,7 +215,7 @@ export function generateTldrawJson(json: OCIFJson): string {
           growY: 0,
           url: ""
         },
-        parentId: `shape:${nodeId}_group`,
+        parentId: `shape:${node.id}_group`,
         index: `b${index.toString().padStart(8, '1')}`,
         typeName: "shape"
       } as any);
@@ -226,8 +226,10 @@ export function generateTldrawJson(json: OCIFJson): string {
   if (json.relations) {
     json.relations.forEach((relationGroup, index) => {
       relationGroup.data.forEach(relation => {
-        const fromNode = json.nodes?.[relation.start];
-        const toNode = json.nodes?.[relation.end];
+        const nodes = json.nodes as unknown as Array<OCIFNode>;
+        const fromNode = nodes?.find(node => node.id === relation.start);
+        const toNode = nodes?.find(node => node.id === relation.end);
+        
         
         if (fromNode && toNode) {
           const fromX = fromNode.position?.[0] || 100;
@@ -248,11 +250,15 @@ export function generateTldrawJson(json: OCIFJson): string {
               }
             }
           }
+
+          // Calculate center point of source node
+          const fromCenterX = fromX + (fromNode.size?.[0] || 120) / 2;
+          const fromCenterY = fromY + (fromNode.size?.[1] || 60) / 2;
           
           // Add arrow
           tldrawJson.records.push({
-            x: fromX + (fromNode.size?.[0] || 120) / 2,
-            y: fromY + (fromNode.size?.[1] || 60) / 2,
+            x: fromCenterX,
+            y: fromCenterY,
             rotation: 0,
             isLocked: false,
             opacity: 1,
@@ -275,8 +281,8 @@ export function generateTldrawJson(json: OCIFJson): string {
                 y: 0
               },
               end: {
-                x: toX - fromX,
-                y: toY - fromY
+                x: toX - fromCenterX,
+                y: toY - fromCenterY
               },
               arrowheadStart: "none",
               arrowheadEnd: "arrow",
@@ -287,7 +293,7 @@ export function generateTldrawJson(json: OCIFJson): string {
             typeName: "shape"
           } as any);
           
-          // Add bindings
+          // Add start binding
           tldrawJson.records.push({
             meta: {},
             id: `binding:${relation.node}_binding_start`,
@@ -306,6 +312,7 @@ export function generateTldrawJson(json: OCIFJson): string {
             typeName: "binding"
           } as any);
           
+          // Add end binding
           tldrawJson.records.push({
             meta: {},
             id: `binding:${relation.node}_binding_end`,
