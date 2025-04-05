@@ -123,7 +123,7 @@ export function generateTldrawJson(json: OCIFJson): string {
         typeName: "camera"
       }
     ]
-  };
+  } as any;
 
   // Add nodes
   if (json.nodes) {
@@ -178,7 +178,7 @@ export function generateTldrawJson(json: OCIFJson): string {
         index: `b${index.toString().padStart(8, '1')}`,
         props: {},
         typeName: "shape"
-      });
+      } as any);
       
       // Add the actual shape
       tldrawJson.records.push({
@@ -209,7 +209,7 @@ export function generateTldrawJson(json: OCIFJson): string {
         parentId: `shape:${nodeId}_group`,
         index: `b${index.toString().padStart(8, '1')}`,
         typeName: "shape"
-      });
+      } as any);
     });
   }
   
@@ -262,7 +262,7 @@ export function generateTldrawJson(json: OCIFJson): string {
               font: "draw"
             },
             typeName: "shape"
-          });
+          } as any);
           
           // Add bindings
           tldrawJson.records.push({
@@ -281,7 +281,7 @@ export function generateTldrawJson(json: OCIFJson): string {
               terminal: "start"
             },
             typeName: "binding"
-          });
+          } as any);
           
           tldrawJson.records.push({
             meta: {},
@@ -299,7 +299,7 @@ export function generateTldrawJson(json: OCIFJson): string {
               terminal: "end"
             },
             typeName: "binding"
-          });
+          } as any);
         }
       });
     });
