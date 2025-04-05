@@ -3,10 +3,12 @@ import JSON5 from 'json5'
 import { OCIFJson, ValidationError } from './types/ocif'
 import { validateJson } from './services/validation-service'
 import { generateSVG } from './services/svg-service'
+import { generateTldrawJson } from './services/tldraw-service'
 import { Layout } from './components/templates/Layout'
 import { FileDropZone } from './components/molecules/FileDropZone'
 import { ValidationResult } from './components/molecules/ValidationResult'
 import { ExportButton } from './components/molecules/ExportButton'
+import { TldrawExportButton } from './components/molecules/TldrawExportButton'
 
 function App() {
   const [validationResult, setValidationResult] = useState<{
@@ -71,6 +73,24 @@ function App() {
     URL.revokeObjectURL(url);
   }, [currentJson, validationResult]);
 
+  const handleTldrawExport = useCallback(() => {
+    if (!currentJson || !validationResult?.isValid) return;
+
+    // Create tldraw content based on OCIF data
+    const tldrawContent = generateTldrawJson(currentJson);
+    
+    // Create blob and download
+    const blob = new Blob([tldrawContent], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ocif-export.tldr.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [currentJson, validationResult]);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
@@ -118,9 +138,14 @@ function App() {
       )}
 
       {validationResult?.isValid && (
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center gap-4">
           <ExportButton 
             onExport={handleExport}
+            disabled={!currentJson || !validationResult?.isValid}
+            variant="subtle"
+          />
+          <TldrawExportButton 
+            onExport={handleTldrawExport}
             disabled={!currentJson || !validationResult?.isValid}
             variant="subtle"
           />
