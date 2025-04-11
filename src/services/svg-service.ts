@@ -1,4 +1,4 @@
-import { OCIFJson, Node, Relation } from '../types/ocif'
+import { OCIFJson, Node, Relation, Group } from '../types/ocif'
 import { renderMarkdownToSVGText } from './utils/markdownToSVGText';
 
 type Resource = NonNullable<OCIFJson['resources']>[number];
@@ -152,6 +152,7 @@ export function generateSVG(json: OCIFJson): string {
   const nodes: Node[] = [];
   const relations: Relation[] = [];
   const nodeSpacing = 100;
+  const groups: Group[] = [];
   
   // Process nodes from the OCIF data
   if (json.nodes) {
@@ -183,41 +184,65 @@ export function generateSVG(json: OCIFJson): string {
   if (json.relations) {
     json.relations.forEach(relationGroup => {
       relationGroup.data.forEach(relation => {
-        const fromNode = nodes.find(n => n.id === relation.start);
-        const toNode = nodes.find(n => n.id === relation.end);
-        
-        if (fromNode && toNode) {
-          const fromCenterX = fromNode.x + fromNode.width / 2;
-          const fromCenterY = fromNode.y + fromNode.height / 2;
-          const toCenterX = toNode.x + toNode.width / 2;
-          const toCenterY = toNode.y + toNode.height / 2;
+        if (relation.type === "@ocif/rel/edge") {
+          const fromNode = nodes.find(n => n.id === relation.start);
+          const toNode = nodes.find(n => n.id === relation.end);
           
-          const [startX, startY] = calculateIntersectionPoint(
-            fromCenterX, fromCenterY,
-            toCenterX, toCenterY,
-            fromNode
-          );
-          
-          const [endX, endY] = calculateIntersectionPoint(
-            fromCenterX, fromCenterY,
-            toCenterX, toCenterY,
-            toNode,
-            true
-          );
-          
-          const path = `M ${startX} ${startY} L ${endX} ${endY}`;
-          
-          relations.push({ 
-            from: relation.start, 
-            to: relation.end, 
-            path,
+          if (fromNode && toNode) {
+            const fromCenterX = fromNode.x + fromNode.width / 2;
+            const fromCenterY = fromNode.y + fromNode.height / 2;
+            const toCenterX = toNode.x + toNode.width / 2;
+            const toCenterY = toNode.y + toNode.height / 2;
+            
+            const [startX, startY] = calculateIntersectionPoint(
+              fromCenterX, fromCenterY,
+              toCenterX, toCenterY,
+              fromNode
+            );
+            
+            const [endX, endY] = calculateIntersectionPoint(
+              fromCenterX, fromCenterY,
+              toCenterX, toCenterY,
+              toNode,
+              true
+            );
+            
+            const path = `M ${startX} ${startY} L ${endX} ${endY}`;
+            
+            relations.push({ 
+              from: relation.start, 
+              to: relation.end, 
+              path,
+              type: relation.type,
+              rel: relation.rel
+            });
+          }
+        } else if (relation.type === "@ocif/rel/group") {
+          groups.push({
+            id: relationGroup.id,
             type: relation.type,
-            rel: relation.rel
+            members: relation.members ?? [],
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0
           });
         }
       });
     });
   }
+
+  groups.forEach(group => {
+    const members = group.members.map(member => nodes.find(n => n.id === member));
+    const minX = Math.min(...members.map(m => m?.x ?? 0));
+    const minY = Math.min(...members.map(m => m?.y ?? 0));
+    const maxX = Math.max(...members.map(m => (m?.x ?? 0) + (m?.width ?? 0)));
+    const maxY = Math.max(...members.map(m => (m?.y ?? 0) + (m?.height ?? 0)));
+    group.x = minX - 50;
+    group.y = minY - 50;
+    group.width = maxX - minX + 100;
+    group.height = maxY - minY + 100;
+  });
 
   // Calculate SVG dimensions based on node positions
   const dimensions = calculateSVGDimensions(nodes);
@@ -245,7 +270,19 @@ export function generateSVG(json: OCIFJson): string {
     </marker>
   </defs>
   
-  <!-- Relations (drawn first so they appear behind nodes) -->
+  <!-- Relations && groups (drawn first so they appear behind nodes) -->
+  ${groups.map(group => `
+    <rect 
+      x="${group.x}"
+      y="${group.y}"
+      width="${group.width}"
+      height="${group.height}"
+      fill="#e0e0e0"
+      stroke="#555555"
+      stroke-width="2"
+    />
+  `).join('\n')}
+  
   ${relations.map(relation => `
     <path 
       d="${relation.path}"

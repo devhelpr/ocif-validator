@@ -25,6 +25,7 @@ export type OCIFJson = {
       end: string;
       rel: string;
       node: string;
+      members?: string[];
     }>;
   }>;
   resources?: Array<{
@@ -69,3 +70,14 @@ export interface Relation {
   type: string;
   rel: string;
 } 
+
+export interface Group {
+  id: string;
+  type: string;
+  members: string[];
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
