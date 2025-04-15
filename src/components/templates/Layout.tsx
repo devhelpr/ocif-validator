@@ -11,7 +11,14 @@ export function Layout({ children }: LayoutProps) {
         <div className="bg-white rounded-3xl shadow-xl shadow-zinc-200/50 backdrop-blur-sm animate-fade-in">
           <div className="px-6 py-8 sm:px-8 sm:py-10">
             <div className="text-center mb-12">
-              <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 inline-block text-transparent bg-clip-text mb-4">
+              <div className="flex justify-center mb-6">
+                <img 
+                  src="/ocwg-ocif-logo.png" 
+                  alt="OCIF Logo" 
+                  className="w-32 h-auto rounded-md shadow-sm"
+                />
+              </div>
+              <h1 className="text-4xl sm:text-5xl font-bold text-black mb-4">
                 OCIF JSON Validator
               </h1>
               <p className="text-zinc-600">
