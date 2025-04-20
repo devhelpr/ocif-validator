@@ -85,7 +85,6 @@ export class JsonCanvasService {
                 toNode: toNode.id,
                 fromSide: "right",
                 toSide: "left",
-                color: "#000000" as CanvasColor,
               });
             }
           }
